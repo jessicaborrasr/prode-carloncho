@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cargar partidos — Prode Carloncho</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0f0f1a;
+  color: #f0f0f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 20px 16px 60px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+h1 { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+h1 span { color: #e94560; }
+.sub { color: #8892a4; font-size: 13px; margin-bottom: 28px; line-height: 1.5; }
+
+.card {
+  background: #1a1a2e;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #2a2a4a;
+}
+.card h2 { font-size: 15px; color: #e94560; margin-bottom: 12px; }
+.card p { font-size: 13px; color: #8892a4; line-height: 1.6; margin-bottom: 10px; }
+
+.warning {
+  background: rgba(245,197,24,0.08);
+  border: 1px solid rgba(245,197,24,0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #f5c518;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:active { opacity: 0.8; }
+.btn-primary { background: #e94560; color: white; margin-bottom: 10px; }
+.btn-danger { background: rgba(233,69,96,0.15); color: #e94560; border: 1px solid rgba(233,69,96,0.3); }
+
+#log {
+  background: #0a0a14;
+  border-radius: 10px;
+  padding: 14px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #00d46a;
+  min-height: 80px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #2a2a4a;
+  margin-top: 14px;
+  display: none;
+  line-height: 1.8;
+}
+.log-error { color: #e94560; }
+.log-info { color: #8892a4; }
+
+.progress-bar {
+  height: 6px;
+  background: #2a2a4a;
+  border-radius: 3px;
+  margin-top: 12px;
+  display: none;
+}
+.progress-fill {
+  height: 100%;
+  background: #e94560;
+  border-radius: 3px;
+  transition: width 0.3s;
+  width: 0%;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.stat-box {
+  background: #16213e;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.stat-box .num { font-size: 22px; font-weight: 800; color: #e94560; }
+.stat-box .lbl { font-size: 10px; color: #8892a4; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<h1>⚽ Cargar <span>Mundial 2026</span></h1>
+<p class="sub">Este archivo carga los 104 partidos del Mundial 2026 en tu Firebase de una sola vez. Solo se usa una vez.</p>
+
+<div class="warning">
+  ⚠️ Antes de continuar, asegurate de haber pegado tus claves de Firebase en este archivo (igual que en carloncho.html y admin.html).
+</div>
+
+<div class="card">
+  <h2>📊 Partidos a cargar</h2>
+  <div class="stats">
+    <div class="stat-box"><div class="num">48</div><div class="lbl">Fase de grupos</div></div>
+    <div class="stat-box"><div class="num">32</div><div class="lbl">Eliminatorias</div></div>
+    <div class="stat-box"><div class="num">104</div><div class="lbl">Total</div></div>
+  </div>
+  <p style="margin-top:12px">Horarios en hora argentina (UTC-3). Los partidos de eliminatorias se cargan sin equipos definidos — los editás desde el panel admin cuando se conozcan los clasificados.</p>
+</div>
+
+<div class="card">
+  <h2>▶️ Ejecutar carga</h2>
+  <p>Tocá el botón. Espera hasta que aparezca el mensaje de confirmación. No cierres esta pantalla.</p>
+  <button class="btn btn-primary" id="loadBtn" onclick="loadAllMatches()">Cargar los 104 partidos</button>
+  <button class="btn btn-danger" onclick="clearAll()">🗑 Borrar todos los partidos</button>
+  <div class="progress-bar" id="progress"><div class="progress-fill" id="fill"></div></div>
+  <div id="log"></div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ═══════════════════════════════════════════════
+  // 🔧 CONFIGURACIÓN FIREBASE — PEGÁ TUS DATOS ACÁ
+  // ═══════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "PEGAR_API_KEY",
+    authDomain: "PEGAR_AUTH_DOMAIN",
+    databaseURL: "PEGAR_DATABASE_URL",
+    projectId: "PEGAR_PROJECT_ID",
+    storageBucket: "PEGAR_STORAGE_BUCKET",
+    messagingSenderId: "PEGAR_MESSAGING_SENDER_ID",
+    appId: "PEGAR_APP_ID"
+  };
+  // ═══════════════════════════════════════════════
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // ── TODOS LOS PARTIDOS DEL MUNDIAL 2026 ─────────
+  // Horarios en hora argentina (ARG, UTC-3)
+  // Los partidos de fase eliminatoria usan equipos genéricos
+  // que el admin actualiza cuando se conocen los clasificados
+
+  const PARTIDOS = [
+    // ══════════════════════════════
+    // FASE DE GRUPOS
+    // ══════════════════════════════
+
+    // GRUPO A
+    { fecha:"2026-06-11", hora:"16:00", equipo_local:"México",         equipo_visitante:"Sudáfrica",        estado:"abierto" },
+    { fecha:"2026-06-11", hora:"23:00", equipo_local:"Corea del Sur",  equipo_visitante:"Rep. Checa",        estado:"abierto" },
+    { fecha:"2026-06-18", hora:"13:00", equipo_local:"Rep. Checa",     equipo_visitante:"Sudáfrica",        estado:"abierto" },
+    { fecha:"2026-06-18", hora:"22:00", equipo_local:"México",         equipo_visitante:"Corea del Sur",    estado:"abierto" },
+    { fecha:"2026-06-25", hora:"22:00", equipo_local:"Rep. Checa",     equipo_visitante:"México",           estado:"abierto" },
+    { fecha:"2026-06-25", hora:"22:00", equipo_local:"Sudáfrica",      equipo_visitante:"Corea del Sur",    estado:"abierto" },
+
+    // GRUPO B
+    { fecha:"2026-06-12", hora:"16:00", equipo_local:"Canadá",         equipo_visitante:"Bosnia-Herz.",     estado:"abierto" },
+    { fecha:"2026-06-13", hora:"16:00", equipo_local:"Qatar",          equipo_visitante:"Suiza",            estado:"abierto" },
+    { fecha:"2026-06-18", hora:"16:00", equipo_local:"Suiza",          equipo_visitante:"Bosnia-Herz.",     estado:"abierto" },
+    { fecha:"2026-06-18", hora:"19:00", equipo_local:"Canadá",         equipo_visitante:"Qatar",            estado:"abierto" },
+    { fecha:"2026-06-25", hora:"16:00", equipo_local:"Suiza",          equipo_visitante:"Canadá",           estado:"abierto" },
+    { fecha:"2026-06-25", hora:"16:00", equipo_local:"Bosnia-Herz.",   equipo_visitante:"Qatar",            estado:"abierto" },
+
+    // GRUPO C
+    { fecha:"2026-06-13", hora:"19:00", equipo_local:"Brasil",         equipo_visitante:"Marruecos",        estado:"abierto" },
+    { fecha:"2026-06-13", hora:"22:00", equipo_local:"Haití",          equipo_visitante:"Escocia",          estado:"abierto" },
+    { fecha:"2026-06-19", hora:"19:00", equipo_local:"Escocia",        equipo_visitante:"Marruecos",        estado:"abierto" },
+    { fecha:"2026-06-19", hora:"21:30", equipo_local:"Brasil",         equipo_visitante:"Haití",            estado:"abierto" },
+    { fecha:"2026-06-26", hora:"19:00", equipo_local:"Marruecos",      equipo_visitante:"Haití",            estado:"abierto" },
+    { fecha:"2026-06-26", hora:"19:00", equipo_local:"Escocia",        equipo_visitante:"Brasil",           estado:"abierto" },
+
+    // GRUPO D
+    { fecha:"2026-06-12", hora:"22:00", equipo_local:"Estados Unidos", equipo_visitante:"Paraguay",         estado:"abierto" },
+    { fecha:"2026-06-14", hora:"01:00", equipo_local:"Australia",      equipo_visitante:"Turquía",          estado:"abierto" },
+    { fecha:"2026-06-19", hora:"16:00", equipo_local:"Estados Unidos", equipo_visitante:"Australia",        estado:"abierto" },
+    { fecha:"2026-06-20", hora:"00:00", equipo_local:"Turquía",        equipo_visitante:"Paraguay",         estado:"abierto" },
+    { fecha:"2026-06-26", hora:"16:00", equipo_local:"Australia",      equipo_visitante:"Paraguay",         estado:"abierto" },
+    { fecha:"2026-06-26", hora:"16:00", equipo_local:"Turquía",        equipo_visitante:"Estados Unidos",   estado:"abierto" },
+
+    // GRUPO E
+    { fecha:"2026-06-14", hora:"14:00", equipo_local:"Alemania",       equipo_visitante:"Curazao",          estado:"abierto" },
+    { fecha:"2026-06-14", hora:"20:00", equipo_local:"Costa de Marfil",equipo_visitante:"Ecuador",          estado:"abierto" },
+    { fecha:"2026-06-20", hora:"17:00", equipo_local:"Alemania",       equipo_visitante:"Costa de Marfil",  estado:"abierto" },
+    { fecha:"2026-06-20", hora:"23:00", equipo_local:"Ecuador",        equipo_visitante:"Curazao",          estado:"abierto" },
+    { fecha:"2026-06-27", hora:"16:00", equipo_local:"Curazao",        equipo_visitante:"Costa de Marfil",  estado:"abierto" },
+    { fecha:"2026-06-27", hora:"16:00", equipo_local:"Ecuador",        equipo_visitante:"Alemania",         estado:"abierto" },
+
+    // GRUPO F
+    { fecha:"2026-06-14", hora:"17:00", equipo_local:"Países Bajos",   equipo_visitante:"Japón",            estado:"abierto" },
+    { fecha:"2026-06-14", hora:"23:00", equipo_local:"Suecia",         equipo_visitante:"Túnez",            estado:"abierto" },
+    { fecha:"2026-06-20", hora:"14:00", equipo_local:"Países Bajos",   equipo_visitante:"Suecia",           estado:"abierto" },
+    { fecha:"2026-06-21", hora:"01:00", equipo_local:"Túnez",          equipo_visitante:"Japón",            estado:"abierto" },
+    { fecha:"2026-06-27", hora:"19:00", equipo_local:"Japón",          equipo_visitante:"Suecia",           estado:"abierto" },
+    { fecha:"2026-06-27", hora:"19:00", equipo_local:"Túnez",          equipo_visitante:"Países Bajos",     estado:"abierto" },
+
+    // GRUPO G
+    { fecha:"2026-06-15", hora:"16:00", equipo_local:"Bélgica",        equipo_visitante:"Egipto",           estado:"abierto" },
+    { fecha:"2026-06-15", hora:"22:00", equipo_local:"Irán",           equipo_visitante:"Nueva Zelanda",    estado:"abierto" },
+    { fecha:"2026-06-21", hora:"16:00", equipo_local:"Bélgica",        equipo_visitante:"Irán",             estado:"abierto" },
+    { fecha:"2026-06-21", hora:"22:00", equipo_local:"Nueva Zelanda",  equipo_visitante:"Egipto",           estado:"abierto" },
+    { fecha:"2026-06-27", hora:"22:00", equipo_local:"Egipto",         equipo_visitante:"Irán",             estado:"abierto" },
+    { fecha:"2026-06-27", hora:"22:00", equipo_local:"Nueva Zelanda",  equipo_visitante:"Bélgica",          estado:"abierto" },
+
+    // GRUPO H
+    { fecha:"2026-06-15", hora:"13:00", equipo_local:"España",         equipo_visitante:"Cabo Verde",       estado:"abierto" },
+    { fecha:"2026-06-15", hora:"19:00", equipo_local:"Arabia Saudita", equipo_visitante:"Uruguay",          estado:"abierto" },
+    { fecha:"2026-06-21", hora:"13:00", equipo_local:"España",         equipo_visitante:"Arabia Saudita",   estado:"abierto" },
+    { fecha:"2026-06-21", hora:"19:00", equipo_local:"Uruguay",        equipo_visitante:"Cabo Verde",       estado:"abierto" },
+    { fecha:"2026-06-28", hora:"13:00", equipo_local:"Cabo Verde",     equipo_visitante:"Arabia Saudita",   estado:"abierto" },
+    { fecha:"2026-06-28", hora:"13:00", equipo_local:"Uruguay",        equipo_visitante:"España",           estado:"abierto" },
+
+    // GRUPO I
+    { fecha:"2026-06-16", hora:"16:00", equipo_local:"Francia",        equipo_visitante:"Senegal",          estado:"abierto" },
+    { fecha:"2026-06-16", hora:"19:00", equipo_local:"Irak",           equipo_visitante:"Noruega",          estado:"abierto" },
+    { fecha:"2026-06-22", hora:"18:00", equipo_local:"Francia",        equipo_visitante:"Irak",             estado:"abierto" },
+    { fecha:"2026-06-22", hora:"21:00", equipo_local:"Noruega",        equipo_visitante:"Senegal",          estado:"abierto" },
+    { fecha:"2026-06-28", hora:"16:00", equipo_local:"Senegal",        equipo_visitante:"Irak",             estado:"abierto" },
+    { fecha:"2026-06-28", hora:"16:00", equipo_local:"Noruega",        equipo_visitante:"Francia",          estado:"abierto" },
+
+    // GRUPO J
+    { fecha:"2026-06-16", hora:"22:00", equipo_local:"Argentina",      equipo_visitante:"Argelia",          estado:"abierto" },
+    { fecha:"2026-06-17", hora:"01:00", equipo_local:"Austria",        equipo_visitante:"Jordania",         estado:"abierto" },
+    { fecha:"2026-06-22", hora:"14:00", equipo_local:"Argentina",      equipo_visitante:"Austria",          estado:"abierto" },
+    { fecha:"2026-06-23", hora:"00:00", equipo_local:"Jordania",       equipo_visitante:"Argelia",          estado:"abierto" },
+    { fecha:"2026-06-28", hora:"19:00", equipo_local:"Argelia",        equipo_visitante:"Austria",          estado:"abierto" },
+    { fecha:"2026-06-28", hora:"19:00", equipo_local:"Jordania",       equipo_visitante:"Argentina",        estado:"abierto" },
+
+    // GRUPO K
+    { fecha:"2026-06-17", hora:"14:00", equipo_local:"Portugal",       equipo_visitante:"RD Congo",         estado:"abierto" },
+    { fecha:"2026-06-17", hora:"23:00", equipo_local:"Uzbekistán",     equipo_visitante:"Colombia",         estado:"abierto" },
+    { fecha:"2026-06-23", hora:"14:00", equipo_local:"Portugal",       equipo_visitante:"Uzbekistán",       estado:"abierto" },
+    { fecha:"2026-06-23", hora:"23:00", equipo_local:"Colombia",       equipo_visitante:"RD Congo",         estado:"abierto" },
+    { fecha:"2026-06-29", hora:"13:00", equipo_local:"RD Congo",       equipo_visitante:"Uzbekistán",       estado:"abierto" },
+    { fecha:"2026-06-29", hora:"13:00", equipo_local:"Colombia",       equipo_visitante:"Portugal",         estado:"abierto" },
+
+    // GRUPO L
+    { fecha:"2026-06-17", hora:"17:00", equipo_local:"Inglaterra",     equipo_visitante:"Croacia",          estado:"abierto" },
+    { fecha:"2026-06-17", hora:"20:00", equipo_local:"Ghana",          equipo_visitante:"Panamá",           estado:"abierto" },
+    { fecha:"2026-06-23", hora:"17:00", equipo_local:"Inglaterra",     equipo_visitante:"Ghana",            estado:"abierto" },
+    { fecha:"2026-06-23", hora:"20:00", equipo_local:"Panamá",        equipo_visitante:"Croacia",          estado:"abierto" },
+    { fecha:"2026-06-29", hora:"16:00", equipo_local:"Croacia",        equipo_visitante:"Ghana",            estado:"abierto" },
+    { fecha:"2026-06-29", hora:"16:00", equipo_local:"Panamá",        equipo_visitante:"Inglaterra",       estado:"abierto" },
+
+    // ══════════════════════════════
+    // 16AVOS DE FINAL
+    // ══════════════════════════════
+    { fecha:"2026-06-30", hora:"19:00", equipo_local:"1° Grupo A",    equipo_visitante:"3° C/E/F/H/I",     estado:"abierto" },
+    { fecha:"2026-07-01", hora:"16:00", equipo_local:"1° Grupo C",    equipo_visitante:"3° A/B/D/G/J",     estado:"abierto" },
+    { fecha:"2026-07-01", hora:"22:00", equipo_local:"1° Grupo B",    equipo_visitante:"3° A/C/D/F/I",     estado:"abierto" },
+    { fecha:"2026-07-02", hora:"16:00", equipo_local:"1° Grupo D",    equipo_visitante:"3° B/E/G/H/L",     estado:"abierto" },
+    { fecha:"2026-07-02", hora:"22:00", equipo_local:"1° Grupo F",    equipo_visitante:"3° A/B/C/J/K",     estado:"abierto" },
+    { fecha:"2026-07-03", hora:"16:00", equipo_local:"1° Grupo E",    equipo_visitante:"3° D/F/G/I/L",     estado:"abierto" },
+    { fecha:"2026-07-03", hora:"22:00", equipo_local:"2° Grupo A",    equipo_visitante:"2° Grupo B",        estado:"abierto" },
+    { fecha:"2026-07-04", hora:"16:00", equipo_local:"2° Grupo C",    equipo_visitante:"2° Grupo D",        estado:"abierto" },
+    { fecha:"2026-07-04", hora:"22:00", equipo_local:"1° Grupo H",    equipo_visitante:"2° Grupo G",        estado:"abierto" },
+    { fecha:"2026-07-05", hora:"16:00", equipo_local:"1° Grupo G",    equipo_visitante:"2° Grupo H",        estado:"abierto" },
+    { fecha:"2026-07-05", hora:"22:00", equipo_local:"2° Grupo E",    equipo_visitante:"2° Grupo F",        estado:"abierto" },
+    { fecha:"2026-07-06", hora:"16:00", equipo_local:"1° Grupo J",    equipo_visitante:"2° Grupo I",        estado:"abierto" },
+    { fecha:"2026-07-06", hora:"22:00", equipo_local:"1° Grupo I",    equipo_visitante:"2° Grupo J",        estado:"abierto" },
+    { fecha:"2026-07-07", hora:"16:00", equipo_local:"1° Grupo K",    equipo_visitante:"2° Grupo L",        estado:"abierto" },
+    { fecha:"2026-07-07", hora:"22:00", equipo_local:"1° Grupo L",    equipo_visitante:"2° Grupo K",        estado:"abierto" },
+    { fecha:"2026-07-08", hora:"19:00", equipo_local:"2° Grupo A/B", equipo_visitante:"Mejor 3°",          estado:"abierto" },
+
+    // ══════════════════════════════
+    // OCTAVOS DE FINAL
+    // ══════════════════════════════
+    { fecha:"2026-07-04", hora:"19:00", equipo_local:"Ganador 16vos 1", equipo_visitante:"Ganador 16vos 2", estado:"abierto" },
+    { fecha:"2026-07-05", hora:"19:00", equipo_local:"Ganador 16vos 3", equipo_visitante:"Ganador 16vos 4", estado:"abierto" },
+    { fecha:"2026-07-06", hora:"19:00", equipo_local:"Ganador 16vos 5", equipo_visitante:"Ganador 16vos 6", estado:"abierto" },
+    { fecha:"2026-07-07", hora:"19:00", equipo_local:"Ganador 16vos 7", equipo_visitante:"Ganador 16vos 8", estado:"abierto" },
+    { fecha:"2026-07-07", hora:"22:00", equipo_local:"Ganador 16vos 9", equipo_visitante:"Ganador 16vos 10",estado:"abierto" },
+    { fecha:"2026-07-08", hora:"16:00", equipo_local:"Ganador 16vos 11",equipo_visitante:"Ganador 16vos 12",estado:"abierto" },
+    { fecha:"2026-07-08", hora:"22:00", equipo_local:"Ganador 16vos 13",equipo_visitante:"Ganador 16vos 14",estado:"abierto" },
+    { fecha:"2026-07-09", hora:"19:00", equipo_local:"Ganador 16vos 15",equipo_visitante:"Ganador 16vos 16",estado:"abierto" },
+
+    // ══════════════════════════════
+    // CUARTOS DE FINAL
+    // ══════════════════════════════
+    { fecha:"2026-07-09", hora:"16:00", equipo_local:"Ganador 8vos 1", equipo_visitante:"Ganador 8vos 2",   estado:"abierto" },
+    { fecha:"2026-07-09", hora:"22:00", equipo_local:"Ganador 8vos 3", equipo_visitante:"Ganador 8vos 4",   estado:"abierto" },
+    { fecha:"2026-07-10", hora:"16:00", equipo_local:"Ganador 8vos 5", equipo_visitante:"Ganador 8vos 6",   estado:"abierto" },
+    { fecha:"2026-07-11", hora:"16:00", equipo_local:"Ganador 8vos 7", equipo_visitante:"Ganador 8vos 8",   estado:"abierto" },
+
+    // ══════════════════════════════
+    // SEMIFINALES
+    // ══════════════════════════════
+    { fecha:"2026-07-14", hora:"20:00", equipo_local:"Ganador CF 1",   equipo_visitante:"Ganador CF 2",     estado:"abierto" },
+    { fecha:"2026-07-15", hora:"20:00", equipo_local:"Ganador CF 3",   equipo_visitante:"Ganador CF 4",     estado:"abierto" },
+
+    // ══════════════════════════════
+    // TERCER PUESTO
+    // ══════════════════════════════
+    { fecha:"2026-07-18", hora:"16:00", equipo_local:"Perdedor SF 1",  equipo_visitante:"Perdedor SF 2",    estado:"abierto" },
+
+    // ══════════════════════════════
+    // FINAL
+    // ══════════════════════════════
+    { fecha:"2026-07-19", hora:"17:00", equipo_local:"Campeón SF 1",   equipo_visitante:"Campeón SF 2",     estado:"abierto" },
+  ];
+
+  // ── Log helper ──────────────────────────────────
+  function log(msg, cls = '') {
+    const el = document.getElementById('log');
+    el.style.display = 'block';
+    el.innerHTML += `<div class="${cls}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function setProgress(pct) {
+    document.getElementById('progress').style.display = 'block';
+    document.getElementById('fill').style.width = pct + '%';
+  }
+
+  // ── Cargar todos los partidos ────────────────────
+  window.loadAllMatches = async function() {
+    const btn = document.getElementById('loadBtn');
+    btn.disabled = true;
+    btn.textContent = 'Cargando...';
+    document.getElementById('log').innerHTML = '';
+
+    log('🚀 Iniciando carga de partidos...', 'log-info');
+
+    let ok = 0, err = 0;
+    const total = PARTIDOS.length;
+
+    for (let i = 0; i < total; i++) {
+      const p = PARTIDOS[i];
+      try {
+        await push(ref(db, 'partidos'), p);
+        ok++;
+        setProgress(Math.round((i+1)/total*100));
+        if (ok % 10 === 0) log(`✅ ${ok}/${total} partidos cargados...`);
+      } catch(e) {
+        err++;
+        log(`❌ Error en partido ${i+1}: ${e.message}`, 'log-error');
+      }
+      // Pequeña pausa para no saturar Firebase
+      await new Promise(r => setTimeout(r, 50));
+    }
+
+    log('');
+    if (err === 0) {
+      log(`🎉 ¡Listo! ${ok} partidos del Mundial 2026 cargados correctamente.`);
+      log(`📱 Ya podés abrir carloncho.html y admin.html.`, 'log-info');
+    } else {
+      log(`⚠️ Se cargaron ${ok} partidos. Errores: ${err}.`, 'log-error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Cargar los 104 partidos';
+  };
+
+  // ── Borrar todo ──────────────────────────────────
+  window.clearAll = async function() {
+    if (!confirm('¿Segura que querés borrar TODOS los partidos y pronósticos? Esta acción no se puede deshacer.')) return;
+    try {
+      await remove(ref(db, 'partidos'));
+      await remove(ref(db, 'pronosticos'));
+      log('🗑 Todos los datos borrados.', 'log-error');
+    } catch(e) {
+      log('❌ Error al borrar: ' + e.message, 'log-error');
+    }
+  };
+</script>
+</body>
+</html>

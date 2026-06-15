@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Prode Carloncho</title>
+  <meta name="theme-color" content="#0f0f1a" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --card2: #16213e;
+      --accent: #e94560;
+      --gold: #f5c518;
+      --green: #00d46a;
+      --blue: #4a9eff;
+      --text: #f0f0f0;
+      --muted: #8892a4;
+      --border: #2a2a4a;
+      --radius: 14px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* LOGIN */
+    #loginScreen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-box {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 360px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .login-box h1 { font-size: 24px; margin-bottom: 6px; }
+    .login-box p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+    .login-input {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+      letter-spacing: 4px;
+    }
+    .login-input:focus { outline: none; border-color: var(--accent); }
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .login-error { color: var(--accent); font-size: 13px; margin-top: 10px; display: none; }
+
+    /* APP */
+    #appScreen { display: none; }
+
+    .header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 16px;
+      border-bottom: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { font-size: 18px; font-weight: 800; }
+    .logo span { color: var(--accent); }
+    .admin-badge {
+      background: rgba(74,158,255,0.2);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 10px;
+    }
+
+    .tabs {
+      display: flex;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      position: sticky;
+      top: 57px;
+      z-index: 99;
+    }
+    .tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 12px 6px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .screen { display: none; padding: 16px; }
+    .screen.active { display: block; }
+
+    /* FORM */
+    .form-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    .form-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--accent);
+    }
+    .form-group { margin-bottom: 12px; }
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; font-weight: 600; }
+    .form-input {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 11px 12px;
+    }
+    .form-input:focus { outline: none; border-color: var(--accent); }
+    select.form-input { cursor: pointer; }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+    .btn:active { opacity: 0.8; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-success { background: var(--green); color: #0f0f1a; }
+    .btn-gold { background: var(--gold); color: #0f0f1a; }
+    .btn-blue { background: var(--blue); color: white; }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-sm { padding: 8px 12px; font-size: 12px; width: auto; }
+    .btn-danger { background: rgba(233,69,96,0.15); color: var(--accent); border: 1px solid rgba(233,69,96,0.3); }
+
+    /* MATCH LIST */
+    .match-item {
+      background: var(--card2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .match-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .match-item-name { font-size: 14px; font-weight: 700; }
+    .match-item-meta { font-size: 12px; color: var(--muted); }
+    .match-item-actions { display: flex; gap: 6px; }
+
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+    .s-abierto { background: rgba(0,212,106,0.15); color: var(--green); }
+    .s-cerrado { background: rgba(233,69,96,0.15); color: var(--accent); }
+    .s-finalizado { background: rgba(245,197,24,0.15); color: var(--gold); }
+
+    /* SCORE INPUTS */
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .score-box {
+      width: 50px;
+      height: 44px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 800;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+    .score-box:focus { outline: none; border-color: var(--green); }
+    .score-box::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    /* RANKING */
+    .ranking-player-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .ranking-player-row input {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px;
+    }
+    .rp-name { flex: 2; }
+    .rp-pts { flex: 1; }
+    .rp-del {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* RANKING DISPLAY */
+    .ranking-card {
+      background: linear-gradient(135deg, #0d0d1f 0%, #1a0a2e 100%);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .ranking-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+    .ranking-subtitle {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .ranking-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      background: rgba(255,255,255,0.04);
+    }
+    .ranking-row.is-carloncho {
+      background: rgba(233,69,96,0.12);
+      border: 1px solid rgba(233,69,96,0.3);
+    }
+    .rank-pos { width: 32px; font-size: 18px; font-weight: 900; }
+    .rank-name { flex: 1; font-size: 15px; font-weight: 700; }
+    .rank-pts { font-size: 16px; font-weight: 800; color: var(--gold); }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e1e3a;
+      border: 1px solid var(--green);
+      color: var(--green);
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .empty { text-align: center; padding: 30px; color: var(--muted); font-size: 14px; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .section-label { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+
+    /* Canvas for image */
+    #rankingCanvas { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h1>🔐 Admin</h1>
+    <p>Panel de administración<br>Prode Carloncho</p>
+    <input type="password" class="login-input" id="pwdInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="loginError">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <div class="header">
+    <div class="logo">⚽ Prode <span>Admin</span></div>
+    <span class="admin-badge">ADMIN</span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('partidos')">📅 Partidos</div>
+    <div class="tab" onclick="showTab('resultados')">✅ Resultados</div>
+    <div class="tab" onclick="showTab('ranking')">🏆 Ranking</div>
+  </div>
+
+  <!-- TAB: PARTIDOS -->
+  <div class="screen active" id="screen-partidos">
+    <div class="form-card">
+      <h3 id="formTitle">➕ Nuevo partido</h3>
+      <input type="hidden" id="editingId" />
+      <div class="row2">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" class="form-input" id="pFecha" />
+        </div>
+        <div class="form-group">
+          <label>Hora</label>
+          <input type="time" class="form-input" id="pHora" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Equipo local</label>
+        <input type="text" class="form-input" id="pLocal" placeholder="Ej: Argentina" />
+      </div>
+      <div class="form-group">
+        <label>Equipo visitante</label>
+        <input type="text" class="form-input" id="pVisit" placeholder="Ej: Brasil" />
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select class="form-input" id="pEstado">
+          <option value="abierto">Abierto</option>
+          <option value="cerrado">Cerrado</option>
+          <option value="finalizado">Finalizado</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveMatch()" style="flex:2">Guardar partido</button>
+        <button class="btn btn-ghost" onclick="cancelEdit()" style="flex:1">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="section-label">Partidos cargados</div>
+    <div id="adminMatchList"><div class="empty">No hay partidos aún</div></div>
+  </div>
+
+  <!-- TAB: RESULTADOS -->
+  <div class="screen" id="screen-resultados">
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Cargá el marcador final de cada partido. Los puntos de Carloncho se calculan automáticamente.</p>
+    <div id="resultList"><div class="empty">No hay partidos cargados</div></div>
+  </div>
+
+  <!-- TAB: RANKING -->
+  <div class="screen" id="screen-ranking">
+    <div class="form-card">
+      <h3>Jugadores de Mercado Pago</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">Ingresá los puntos actuales de cada jugador. Carloncho se agrega solo.</p>
+      <div id="playerRows"></div>
+      <button class="btn btn-ghost" onclick="addPlayerRow()" style="margin-bottom:12px;">+ Agregar jugador</button>
+      <button class="btn btn-gold" onclick="generateRanking()">Generar ranking</button>
+    </div>
+
+    <div id="rankingResult" style="display:none">
+      <div class="ranking-card" id="rankingDisplay"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-success" onclick="downloadRanking('png')" style="flex:1">⬇️ PNG</button>
+        <button class="btn btn-blue" onclick="downloadRanking('jpg')" style="flex:1">⬇️ JPG</button>
+      </div>
+      <p style="color:var(--muted);font-size:11px;text-align:center;margin-top:8px;">Optimizado para compartir por WhatsApp</p>
+    </div>
+  </div>
+</div>
+
+<canvas id="rankingCanvas"></canvas>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, remove, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ═══════════════════════════════════════════════
+  // 🔧 CONFIGURACIÓN FIREBASE — PEGÁ TUS DATOS ACÁ
+  // ═══════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyCDUgIkNNxKT0x5v_rFeePd3WrObSF3EgI",
+    authDomain: "prode-carloncho.firebaseapp.com",
+    databaseURL: "https://prode-carloncho-default-rtdb.firebaseio.com",
+    projectId: "prode-carloncho",
+    storageBucket: "prode-carloncho.firebasestorage.app",
+    messagingSenderId: "52661512564",
+    appId: "1:52661512564:web:2648be1662d20450a0a421"
+  };
+  // ═══════════════════════════════════════════════
+
+  // ── CONTRASEÑA ADMIN ────────────────────────────
+  // Cambiá esto por la contraseña que quieras
+  const ADMIN_PASSWORD = "carloncho2026";
+  // ───────────────────────────────────────────────
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let allMatches = {};
+  let allPicks = {};
+  let carlonchoTotal = 0;
+
+  // ── LOGIN ───────────────────────────────────────
+  window.doLogin = function() {
+    const pwd = document.getElementById('pwdInput').value;
+    if (pwd === ADMIN_PASSWORD) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appScreen').style.display = 'block';
+      initApp();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('pwdInput').value = '';
+    }
+  };
+
+  function initApp() {
+    onValue(ref(db, 'partidos'), snap => {
+      allMatches = snap.val() || {};
+      renderAdminMatches();
+      renderResults();
+      calcCarlonchoTotal();
+    });
+    onValue(ref(db, 'pronosticos'), snap => {
+      allPicks = snap.val() || {};
+      calcCarlonchoTotal();
+    });
+    addPlayerRow();
+  }
+
+  // ── Utilidades ──────────────────────────────────
+  function calcPoints(pick, match) {
+    if (match.goles_local_reales === undefined || match.goles_visitante_reales === undefined) return null;
+    if (!pick || pick.local === undefined) return null;
+    const rL = parseInt(match.goles_local_reales), rV = parseInt(match.goles_visitante_reales);
+    const pL = parseInt(pick.local), pV = parseInt(pick.visitante);
+    if (isNaN(rL)||isNaN(rV)||isNaN(pL)||isNaN(pV)) return null;
+    if (pL===rL && pV===rV) return 6;
+    const rW = rL>rV?'L':rL<rV?'V':'E', pW = pL>pV?'L':pL<pV?'V':'E';
+    return rW===pW ? 3 : 0;
+  }
+
+  function calcCarlonchoTotal() {
+    let total = 0;
+    Object.entries(allMatches).forEach(([id, m]) => {
+      if (m.estado !== 'finalizado') return;
+      const pts = calcPoints(allPicks[id], m);
+      if (pts !== null) total += pts;
+    });
+    carlonchoTotal = total;
+  }
+
+  function formatDate(d) {
+    const [y,m,day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  }
+
+  function showToast(msg, color='#00d46a') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.borderColor = color;
+    t.style.color = color;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ── Tab switching ───────────────────────────────
+  window.showTab = function(tab) {
+    document.querySelectorAll('.tab').forEach((el,i) => {
+      el.classList.toggle('active', ['partidos','resultados','ranking'][i] === tab);
+    });
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`screen-${tab}`).classList.add('active');
+  };
+
+  // ── PARTIDOS ────────────────────────────────────
+  window.saveMatch = async function() {
+    const fecha = document.getElementById('pFecha').value;
+    const hora = document.getElementById('pHora').value;
+    const local = document.getElementById('pLocal').value.trim();
+    const visit = document.getElementById('pVisit').value.trim();
+    const estado = document.getElementById('pEstado').value;
+    const editId = document.getElementById('editingId').value;
+
+    if (!fecha || !hora || !local || !visit) {
+      showToast('Completá todos los campos', '#f5c518'); return;
+    }
+
+    const data = { fecha, hora, equipo_local: local, equipo_visitante: visit, estado };
+
+    try {
+      if (editId) {
+        await set(ref(db, `partidos/${editId}`), data);
+        showToast('✅ Partido actualizado');
+      } else {
+        await push(ref(db, 'partidos'), data);
+        showToast('✅ Partido creado');
+      }
+      cancelEdit();
+    } catch(e) {
+      showToast('❌ Error al guardar', '#e94560');
+    }
+  };
+
+  window.cancelEdit = function() {
+    document.getElementById('editingId').value = '';
+    document.getElementById('formTitle').textContent = '➕ Nuevo partido';
+    document.getElementById('pFecha').value = '';
+    document.getElementById('pHora').value = '';
+    document.getElementById('pLocal').value = '';
+    document.getElementById('pVisit').value = '';
+    document.getElementById('pEstado').value = 'abierto';
+  };
+
+  window.editMatch = function(id) {
+    const m = allMatches[id];
+    if (!m) return;
+    document.getElementById('editingId').value = id;
+    document.getElementById('formTitle').textContent = '✏️ Editar partido';
+    document.getElementById('pFecha').value = m.fecha;
+    document.getElementById('pHora').value = m.hora;
+    document.getElementById('pLocal').value = m.equipo_local;
+    document.getElementById('pVisit').value = m.equipo_visitante;
+    document.getElementById('pEstado').value = m.estado;
+    window.scrollTo(0, 0);
+  };
+
+  window.deleteMatch = async function(id) {
+    if (!confirm('¿Eliminar este partido?')) return;
+    await remove(ref(db, `partidos/${id}`));
+    await remove(ref(db, `pronosticos/${id}`));
+    showToast('Partido eliminado');
+  };
+
+  function renderAdminMatches() {
+    const container = document.getElementById('adminMatchList');
+    const entries = Object.entries(allMatches);
+    if (!entries.length) { container.innerHTML = '<div class="empty">No hay partidos aún</div>'; return; }
+
+    const byDate = {};
+    entries.forEach(([id,m]) => { if (!byDate[m.fecha]) byDate[m.fecha]=[]; byDate[m.fecha].push({id,...m}); });
+
+    let html = '';
+    Object.keys(byDate).sort().forEach(date => {
+      html += `<div class="section-label" style="margin-top:16px">${formatDate(date)}</div>`;
+      byDate[date].sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(m => {
+        const sc = m.estado === 'abierto' ? 's-abierto' : m.estado === 'cerrado' ? 's-cerrado' : 's-finalizado';
+        html += `
+          <div class="match-item">
+            <div class="match-item-header">
+              <div>
+                <div class="match-item-name">${m.equipo_local} vs ${m.equipo_visitante}</div>
+                <div class="match-item-meta">${m.hora} hs · <span class="status-badge ${sc}">${m.estado}</span></div>
+              </div>
+            </div>
+            <div class="match-item-actions">
+              <button class="btn btn-ghost btn-sm" onclick="editMatch('${m.id}')">✏️ Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteMatch('${m.id}')">🗑 Borrar</button>
+            </div>
+          </div>`;
+      });
+    });
+    container.innerHTML = html;
+  }
+
+  // ── RESULTADOS ──────────────────────────────────
+  function renderResults() {
+    const container = document.getElementById('resultList');
+    const entries = Object.entries(allMatches);
+    if (!entries.length) { container.innerHTML = '<div class="empty">No hay partidos cargados</div>'; return; }
+
+    const byDate = {};
+    entries.forEach(([id,m]) => { if (!byDate[m.fecha]) byDate[m.fecha]=[]; byDate[m.fecha].push({id,...m}); });
+
+    let html = '';
+    Object.keys(byDate).sort().forEach(date => {
+      html += `<div class="section-label" style="margin-top:16px">${formatDate(date)}</div>`;
+      byDate[date].sort((a,b)=>a.hora.localeCompare(b.hora)).forEach(m => {
+        const pick = allPicks[m.id] || {};
+        const pts = calcPoints(pick, m);
+        const ptsHtml = pts !== null
+          ? `<span style="font-weight:800;color:${pts===6?'var(--green)':pts===3?'var(--gold)':'var(--accent)'}">${pts} pts Carloncho</span>`
+          : '';
+
+        html += `
+          <div class="match-item">
+            <div class="match-item-header">
+              <div>
+                <div class="match-item-name">${m.equipo_local} vs ${m.equipo_visitante}</div>
+                <div class="match-item-meta">${formatDate(m.fecha)} · ${m.hora} hs</div>
+              </div>
+              ${ptsHtml}
+            </div>
+            <div class="score-row">
+              <span style="flex:1;font-size:13px;text-align:right">${m.equipo_local}</span>
+              <input class="score-box" type="number" min="0" id="rl_${m.id}" value="${m.goles_local_reales ?? ''}" placeholder="–" />
+              <span style="font-weight:700;color:var(--muted)">-</span>
+              <input class="score-box" type="number" min="0" id="rv_${m.id}" value="${m.goles_visitante_reales ?? ''}" placeholder="–" />
+              <span style="flex:1;font-size:13px">${m.equipo_visitante}</span>
+            </div>
+            <button class="btn btn-success" style="margin-top:8px" onclick="saveResult('${m.id}')">Guardar resultado</button>
+          </div>`;
+      });
+    });
+    container.innerHTML = html;
+  }
+
+  window.saveResult = async function(id) {
+    const rl = document.getElementById(`rl_${id}`).value;
+    const rv = document.getElementById(`rv_${id}`).value;
+    if (rl === '' || rv === '') { showToast('Ingresá el marcador completo', '#f5c518'); return; }
+
+    const m = { ...allMatches[id], goles_local_reales: parseInt(rl), goles_visitante_reales: parseInt(rv), estado: 'finalizado' };
+    try {
+      await set(ref(db, `partidos/${id}`), m);
+      showToast('✅ Resultado guardado · Puntos calculados');
+    } catch(e) {
+      showToast('❌ Error al guardar', '#e94560');
+    }
+  };
+
+  // ── RANKING ─────────────────────────────────────
+  window.addPlayerRow = function() {
+    const container = document.getElementById('playerRows');
+    const row = document.createElement('div');
+    row.className = 'ranking-player-row';
+    row.innerHTML = `
+      <input type="text" class="rp-name" placeholder="Nombre" />
+      <input type="number" class="rp-pts" placeholder="Pts" min="0" />
+      <button class="rp-del" onclick="this.parentElement.remove()">×</button>`;
+    container.appendChild(row);
+  };
+
+  window.generateRanking = function() {
+    calcCarlonchoTotal();
+    const rows = document.querySelectorAll('.ranking-player-row');
+    const players = [];
+    rows.forEach(row => {
+      const name = row.querySelector('.rp-name').value.trim();
+      const pts = parseInt(row.querySelector('.rp-pts').value);
+      if (name && !isNaN(pts)) players.push({ name, pts, isCarloncho: false });
+    });
+    players.push({ name: 'Carloncho', pts: carlonchoTotal, isCarloncho: true });
+    players.sort((a,b) => b.pts - a.pts);
+
+    const medals = ['🥇','🥈','🥉'];
+    let html = `
+      <div class="ranking-title">🏆 PRODE DEL MUNDIAL</div>
+      <div class="ranking-subtitle">Ranking general · ${new Date().toLocaleDateString('es-AR')}</div>`;
+
+    players.forEach((p, i) => {
+      const pos = medals[i] || `${i+1}.`;
+      html += `
+        <div class="ranking-row ${p.isCarloncho ? 'is-carloncho' : ''}">
+          <span class="rank-pos">${pos}</span>
+          <span class="rank-name">${p.name}${p.isCarloncho ? ' ⭐' : ''}</span>
+          <span class="rank-pts">${p.pts} pts</span>
+        </div>`;
+    });
+
+    document.getElementById('rankingDisplay').innerHTML = html;
+    document.getElementById('rankingResult').style.display = 'block';
+    window.rankingData = players;
+  };
+
+  // ── EXPORT IMAGEN ────────────────────────────────
+  window.downloadRanking = function(format) {
+    const players = window.rankingData;
+    if (!players) return;
+
+    const W = 1080, H = 1920;
+    const canvas = document.getElementById('rankingCanvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#0a0a1a');
+    grad.addColorStop(0.5, '#1a0a2e');
+    grad.addColorStop(1, '#0a1a2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Decorative circles
+    ctx.beginPath();
+    ctx.arc(W * 0.85, H * 0.1, 220, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(233,69,96,0.06)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(W * 0.15, H * 0.85, 180, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(74,158,255,0.06)';
+    ctx.fill();
+
+    // Grid lines decoration
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < H; i += 60) {
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+
+    // Trophy emoji area
+    ctx.font = '120px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏆', W/2, 200);
+
+    // Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 72px -apple-system, sans-serif';
+    ctx.letterSpacing = '2px';
+    ctx.fillText('PRODE DEL MUNDIAL', W/2, 310);
+
+    // Subtitle line
+    ctx.fillStyle = '#e94560';
+    ctx.fillRect(W/2 - 200, 335, 400, 4);
+
+    // Date
+    ctx.fillStyle = '#8892a4';
+    ctx.font = '36px -apple-system, sans-serif';
+    ctx.fillText(new Date().toLocaleDateString('es-AR', { day:'numeric', month:'long', year:'numeric' }), W/2, 395);
+
+    // Players
+    const startY = 480;
+    const rowH = 110;
+    const medals = ['🥇', '🥈', '🥉'];
+
+    players.forEach((p, i) => {
+      const y = startY + i * rowH;
+      const isCarloncho = p.isCarloncho;
+
+      // Row background
+      if (isCarloncho) {
+        ctx.fillStyle = 'rgba(233,69,96,0.12)';
+        ctx.strokeStyle = 'rgba(233,69,96,0.4)';
+        ctx.lineWidth = 2;
+        roundRect(ctx, 60, y, W - 120, rowH - 12, 16);
+        ctx.fill(); ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        roundRect(ctx, 60, y, W - 120, rowH - 12, 16);
+        ctx.fill();
+      }
+
+      // Position
+      ctx.font = '52px serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(medals[i] || `${i+1}`, 85, y + 65);
+
+      // Name
+      ctx.fillStyle = isCarloncho ? '#e94560' : '#f0f0f0';
+      ctx.font = `bold 48px -apple-system, sans-serif`;
+      ctx.fillText(p.name + (isCarloncho ? ' ⭐' : ''), 165, y + 65);
+
+      // Points
+      ctx.fillStyle = '#f5c518';
+      ctx.font = 'bold 52px -apple-system, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${p.pts} pts`, W - 80, y + 65);
+    });
+
+    // Footer
+    ctx.fillStyle = 'rgba(136,146,164,0.6)';
+    ctx.font = '28px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚽ Prode Carloncho', W/2, H - 60);
+
+    // Download
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ranking-prode.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, format === 'jpg' ? 'image/jpeg' : 'image/png', 0.95);
+  };
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+</script>
+</body>
+</html>

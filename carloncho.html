@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prode Carloncho</title>
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Prode" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --card2: #16213e;
+      --accent: #e94560;
+      --gold: #f5c518;
+      --green: #00d46a;
+      --text: #f0f0f0;
+      --muted: #8892a4;
+      --border: #2a2a4a;
+      --radius: 14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 20px 16px 16px;
+      border-bottom: 2px solid var(--accent);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--accent); }
+    .total-badge {
+      background: var(--accent);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 69px;
+      z-index: 99;
+    }
+    .tab {
+      flex: 1;
+      padding: 13px 8px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* SCREENS */
+    .screen { display: none; padding: 16px; }
+    .screen.active { display: block; }
+
+    /* SECTION HEADER */
+    .section-date {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 20px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-date::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* MATCH CARD */
+    .match-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+    }
+    .match-card.closed {
+      opacity: 0.6;
+      border-color: #333;
+    }
+    .match-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .match-time {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .match-status {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+    }
+    .status-open { background: rgba(0,212,106,0.15); color: var(--green); }
+    .status-closed { background: rgba(233,69,96,0.15); color: var(--accent); }
+    .status-finished { background: rgba(245,197,24,0.15); color: var(--gold); }
+
+    .match-teams {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .team-name {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .vs-area {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .score-input {
+      width: 44px;
+      height: 44px;
+      background: var(--card2);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 800;
+      text-align: center;
+      -moz-appearance: textfield;
+      transition: border-color 0.2s;
+    }
+    .score-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .score-input::-webkit-inner-spin-button,
+    .score-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .score-input[disabled] {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .vs-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    /* Points display under match */
+    .match-points {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .real-score { color: var(--muted); }
+    .pts-badge {
+      font-weight: 800;
+      font-size: 14px;
+      padding: 2px 10px;
+      border-radius: 8px;
+    }
+    .pts-6 { background: rgba(0,212,106,0.2); color: var(--green); }
+    .pts-3 { background: rgba(245,197,24,0.2); color: var(--gold); }
+    .pts-0 { background: rgba(233,69,96,0.15); color: var(--accent); }
+
+    /* SAVE BUTTON */
+    .save-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: opacity 0.2s;
+    }
+    .save-btn:active { opacity: 0.85; }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e1e3a;
+      border: 1px solid var(--green);
+      color: var(--green);
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* SCORE SCREEN */
+    .score-hero {
+      background: linear-gradient(135deg, var(--card) 0%, var(--card2) 100%);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .score-hero .big-number {
+      font-size: 64px;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .score-hero .label {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .day-row {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .day-row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .day-row-date { font-size: 14px; font-weight: 700; }
+    .day-row-pts { font-size: 16px; font-weight: 800; color: var(--gold); }
+    .day-row-detail {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .day-row-detail.open { display: block; }
+    .detail-match {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 5px 0;
+      color: var(--muted);
+    }
+    .detail-match span:last-child { font-weight: 700; color: var(--text); }
+
+    /* EMPTY STATE */
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty .emoji { font-size: 48px; margin-bottom: 12px; }
+    .empty p { font-size: 15px; line-height: 1.5; }
+
+    /* LOADING */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* CONFIG SCREEN */
+    .config-banner {
+      background: linear-gradient(135deg, #1a1a2e, #0d1b3e);
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .config-banner h2 { font-size: 20px; margin-bottom: 8px; }
+    .config-banner p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .config-input {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .config-input:focus { outline: none; border-color: var(--accent); }
+    .config-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">⚽ Prode <span>Carloncho</span></div>
+    <div class="total-badge" id="totalBadge">0 pts</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('pronosticos')">📋 Pronósticos</div>
+  <div class="tab" onclick="showTab('puntaje')">🏆 Mi puntaje</div>
+</div>
+
+<!-- SCREEN: PRONÓSTICOS -->
+<div class="screen active" id="screen-pronosticos">
+  <div id="matchList"><div class="loading"><div class="spinner"></div>Cargando partidos...</div></div>
+  <button class="save-btn" onclick="saveAll()" id="saveBtn">Guardar pronósticos</button>
+</div>
+
+<!-- SCREEN: PUNTAJE -->
+<div class="screen" id="screen-puntaje">
+  <div class="score-hero">
+    <div class="big-number" id="totalPts">0</div>
+    <div class="label">puntos acumulados</div>
+  </div>
+  <div id="historyList"><div class="loading"><div class="spinner"></div>Cargando historial...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ═══════════════════════════════════════════════
+  // 🔧 CONFIGURACIÓN FIREBASE — PEGÁ TUS DATOS ACÁ
+  // ═══════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyCDUgIkNNxKT0x5v_rFeePd3WrObSF3EgI",
+    authDomain: "prode-carloncho.firebaseapp.com",
+    databaseURL: "Phttps://prode-carloncho-default-rtdb.firebaseio.com",
+    projectId: "prode-carloncho",
+    storageBucket: "prode-carloncho.firebasestorage.app",
+    messagingSenderId: "52661512564",
+    appId: "1:52661512564:web:2648be1662d20450a0a421"
+  };
+  // ═══════════════════════════════════════════════
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let allMatches = {};
+  let myPicks = {};
+
+  // ── Utilidades ──────────────────────────────────
+  function isLocked(match) {
+    if (match.estado === 'cerrado' || match.estado === 'finalizado') return true;
+    const now = new Date();
+    const matchDT = new Date(`${match.fecha}T${match.hora}:00`);
+    return now >= matchDT;
+  }
+
+  function calcPoints(pick, match) {
+    if (match.goles_local_reales === undefined || match.goles_visitante_reales === undefined) return null;
+    if (pick.local === undefined || pick.visitante === undefined) return null;
+    const rL = parseInt(match.goles_local_reales);
+    const rV = parseInt(match.goles_visitante_reales);
+    const pL = parseInt(pick.local);
+    const pV = parseInt(pick.visitante);
+    if (isNaN(rL) || isNaN(rV) || isNaN(pL) || isNaN(pV)) return null;
+    if (pL === rL && pV === rV) return 6;
+    const rWin = rL > rV ? 'L' : rL < rV ? 'V' : 'E';
+    const pWin = pL > pV ? 'L' : pL < pV ? 'V' : 'E';
+    if (rWin === pWin) return 3;
+    return 0;
+  }
+
+  function formatDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function showToast(msg, color = '#00d46a') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.borderColor = color;
+    t.style.color = color;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ── Render pronósticos ──────────────────────────
+  function renderMatches() {
+    const container = document.getElementById('matchList');
+    const matches = Object.entries(allMatches);
+    if (!matches.length) {
+      container.innerHTML = `<div class="empty"><div class="emoji">📭</div><p>No hay partidos cargados todavía.<br>El administrador los va a agregar pronto.</p></div>`;
+      document.getElementById('saveBtn').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('saveBtn').style.display = 'block';
+
+    // group by date
+    const byDate = {};
+    matches.forEach(([id, m]) => {
+      if (!byDate[m.fecha]) byDate[m.fecha] = [];
+      byDate[m.fecha].push({ id, ...m });
+    });
+
+    const sorted = Object.keys(byDate).sort();
+    let html = '';
+
+    sorted.forEach(date => {
+      html += `<div class="section-date">${formatDate(date)}</div>`;
+      byDate[date].sort((a,b) => a.hora.localeCompare(b.hora)).forEach(match => {
+        const locked = isLocked(match);
+        const pick = myPicks[match.id] || {};
+        const pts = calcPoints(pick, match);
+        const statusLabel = locked ? (match.estado === 'finalizado' ? 'Finalizado' : 'Cerrado') : 'Abierto';
+        const statusClass = locked ? (match.estado === 'finalizado' ? 'status-finished' : 'status-closed') : 'status-open';
+
+        let pointsHtml = '';
+        if (pts !== null) {
+          const cls = pts === 6 ? 'pts-6' : pts === 3 ? 'pts-3' : 'pts-0';
+          pointsHtml = `
+            <div class="match-points">
+              <span class="real-score">Real: ${match.goles_local_reales}-${match.goles_visitante_reales}</span>
+              <span class="pts-badge ${cls}">${pts} pts</span>
+            </div>`;
+        }
+
+        html += `
+          <div class="match-card ${locked ? 'closed' : ''}">
+            <div class="match-header">
+              <span class="match-time">🕐 ${match.hora}</span>
+              <span class="match-status ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="match-teams">
+              <span class="team-name">${match.equipo_local}</span>
+              <div class="vs-area">
+                <input class="score-input" type="number" min="0" max="20" id="local_${match.id}"
+                  value="${pick.local ?? ''}" ${locked ? 'disabled' : ''}
+                  oninput="this.value=this.value.slice(0,2)" />
+                <span class="vs-label">-</span>
+                <input class="score-input" type="number" min="0" max="20" id="visit_${match.id}"
+                  value="${pick.visitante ?? ''}" ${locked ? 'disabled' : ''}
+                  oninput="this.value=this.value.slice(0,2)" />
+              </div>
+              <span class="team-name">${match.equipo_visitante}</span>
+            </div>
+            ${pointsHtml}
+          </div>`;
+      });
+    });
+
+    container.innerHTML = html;
+  }
+
+  // ── Guardar pronósticos ─────────────────────────
+  window.saveAll = async function() {
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    let saved = 0;
+    const updates = {};
+
+    for (const [id, match] of Object.entries(allMatches)) {
+      if (isLocked(match)) continue;
+      const lEl = document.getElementById(`local_${id}`);
+      const vEl = document.getElementById(`visit_${id}`);
+      if (!lEl || !vEl) continue;
+      const l = lEl.value.trim();
+      const v = vEl.value.trim();
+      if (l === '' || v === '') continue;
+      updates[`pronosticos/${id}`] = { local: parseInt(l), visitante: parseInt(v), timestamp: Date.now() };
+      saved++;
+    }
+
+    if (!saved) {
+      showToast('No hay pronósticos nuevos para guardar', '#f5c518');
+      btn.disabled = false;
+      btn.textContent = 'Guardar pronósticos';
+      return;
+    }
+
+    try {
+      for (const [path, val] of Object.entries(updates)) {
+        await set(ref(db, path), val);
+      }
+      myPicks = {};
+      for (const [path, val] of Object.entries(updates)) {
+        const id = path.split('/')[1];
+        myPicks[id] = val;
+      }
+      showToast(`✅ ${saved} pronóstico${saved > 1 ? 's' : ''} guardado${saved > 1 ? 's' : ''}`);
+      renderMatches();
+      renderHistory();
+    } catch(e) {
+      showToast('❌ Error al guardar. Revisá la conexión.', '#e94560');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Guardar pronósticos';
+  };
+
+  // ── Render historial ────────────────────────────
+  function renderHistory() {
+    const container = document.getElementById('historyList');
+    const matches = Object.entries(allMatches).filter(([id, m]) => m.estado === 'finalizado');
+
+    if (!matches.length) {
+      container.innerHTML = `<div class="empty"><div class="emoji">🕐</div><p>Todavía no hay partidos finalizados.</p></div>`;
+      document.getElementById('totalPts').textContent = '0';
+      document.getElementById('totalBadge').textContent = '0 pts';
+      return;
+    }
+
+    const byDate = {};
+    matches.forEach(([id, m]) => {
+      if (!byDate[m.fecha]) byDate[m.fecha] = [];
+      byDate[m.fecha].push({ id, ...m });
+    });
+
+    let total = 0;
+    let html = '';
+
+    Object.keys(byDate).sort().reverse().forEach(date => {
+      let dayPts = 0;
+      let detailHtml = '';
+      byDate[date].forEach(match => {
+        const pick = myPicks[match.id] || {};
+        const pts = calcPoints(pick, match) ?? 0;
+        dayPts += pts;
+        const pickStr = (pick.local !== undefined) ? `${pick.local}-${pick.visitante}` : '—';
+        const cls = pts === 6 ? 'pts-6' : pts === 3 ? 'pts-3' : 'pts-0';
+        detailHtml += `
+          <div class="detail-match">
+            <span>${match.equipo_local} vs ${match.equipo_visitante}</span>
+            <span>Pronós: ${pickStr} · <span class="pts-badge ${cls}" style="font-size:12px;padding:1px 6px;">${pts}pts</span></span>
+          </div>`;
+      });
+      total += dayPts;
+      html += `
+        <div class="day-row" onclick="toggleDay(this)">
+          <div class="day-row-header">
+            <span class="day-row-date">📅 ${formatDate(date)}</span>
+            <span class="day-row-pts">${dayPts} pts</span>
+          </div>
+          <div class="day-row-detail">${detailHtml}</div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+    document.getElementById('totalPts').textContent = total;
+    document.getElementById('totalBadge').textContent = `${total} pts`;
+  }
+
+  window.toggleDay = function(el) {
+    el.querySelector('.day-row-detail').classList.toggle('open');
+  };
+
+  // ── Tab switching ───────────────────────────────
+  window.showTab = function(tab) {
+    document.querySelectorAll('.tab').forEach((t,i) => {
+      t.classList.toggle('active', (tab === 'pronosticos' && i === 0) || (tab === 'puntaje' && i === 1));
+    });
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`screen-${tab}`).classList.add('active');
+  };
+
+  // ── Firebase listeners ──────────────────────────
+  onValue(ref(db, 'partidos'), snap => {
+    allMatches = snap.val() || {};
+    renderMatches();
+    renderHistory();
+  });
+
+  onValue(ref(db, 'pronosticos'), snap => {
+    myPicks = snap.val() || {};
+    renderMatches();
+    renderHistory();
+  });
+</script>
+</body>
+</html>
