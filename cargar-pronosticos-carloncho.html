@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cargar pronósticos históricos — Carloncho</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0f0f1a;
+  color: #f0f0f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 20px 16px 60px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+h1 { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+h1 span { color: #e94560; }
+.sub { color: #8892a4; font-size: 13px; margin-bottom: 24px; line-height: 1.5; }
+
+.warning {
+  background: rgba(245,197,24,0.08);
+  border: 1px solid rgba(245,197,24,0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #f5c518;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #1a1a2e;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 14px;
+  border: 1px solid #2a2a4a;
+}
+.card h2 { font-size: 14px; color: #e94560; margin-bottom: 12px; font-weight: 700; }
+
+.match-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a2a4a;
+  font-size: 13px;
+}
+.match-row:last-child { border-bottom: none; }
+.match-name { flex: 1; color: #f0f0f0; }
+.match-pick { color: #e94560; font-weight: 700; min-width: 50px; text-align: center; }
+.match-real { color: #8892a4; min-width: 50px; text-align: center; }
+.pts { font-weight: 800; min-width: 44px; text-align: right; font-size: 13px; }
+.pts-6 { color: #00d46a; }
+.pts-3 { color: #f5c518; }
+.pts-0 { color: #e94560; }
+.pts-skip { color: #444; }
+
+.total-box {
+  background: linear-gradient(135deg, #1a0a2e, #0a1a2e);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid rgba(233,69,96,0.3);
+  margin-bottom: 16px;
+}
+.total-num { font-size: 52px; font-weight: 900; color: #e94560; line-height: 1; }
+.total-lbl { font-size: 13px; color: #8892a4; margin-top: 4px; }
+
+.btn {
+  width: 100%; padding: 15px;
+  border: none; border-radius: 12px;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.2s;
+  margin-bottom: 10px;
+}
+.btn:active { opacity: 0.8; }
+.btn-primary { background: #e94560; color: white; }
+.btn-ghost { background: transparent; color: #8892a4; border: 1px solid #2a2a4a; }
+
+.col-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #8892a4;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+  padding: 0 0 6px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+#log {
+  background: #0a0a14;
+  border-radius: 10px;
+  padding: 14px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #00d46a;
+  min-height: 60px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #2a2a4a;
+  margin-top: 14px;
+  display: none;
+  line-height: 1.8;
+}
+.log-error { color: #e94560; }
+.log-info { color: #8892a4; }
+
+.progress-bar { height: 6px; background: #2a2a4a; border-radius: 3px; margin-top: 12px; display: none; }
+.progress-fill { height: 100%; background: #e94560; border-radius: 3px; transition: width 0.3s; width: 0%; }
+</style>
+</head>
+<body>
+
+<h1>⚽ Pronósticos <span>históricos</span></h1>
+<p class="sub">Carga única de los pronósticos analógicos de Carloncho y resultados de los partidos ya jugados.</p>
+
+<div class="warning">
+  ⚠️ Usá este archivo UNA SOLA VEZ. Si lo ejecutás dos veces, los datos se duplican. Asegurate de tener las claves de Firebase pegadas abajo.
+</div>
+
+<div class="total-box">
+  <div class="total-num">24</div>
+  <div class="total-lbl">puntos de Carloncho hasta hoy</div>
+</div>
+
+<div class="card">
+  <h2>📋 Pronósticos a cargar</h2>
+  <div class="col-header">
+    <span style="flex:1">Partido</span>
+    <span style="min-width:50px;text-align:center">Carloncho</span>
+    <span style="min-width:50px;text-align:center">Real</span>
+    <span style="min-width:44px;text-align:right">Pts</span>
+  </div>
+
+  <div class="match-row">
+    <span class="match-name">México vs Sudáfrica</span>
+    <span class="match-pick">3-0</span>
+    <span class="match-real">2-0</span>
+    <span class="pts pts-3">3 pts</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Corea del Sur vs Rep. Checa</span>
+    <span class="match-pick">2-0</span>
+    <span class="match-real">2-1</span>
+    <span class="pts pts-3">3 pts</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Canadá vs Bosnia-Herz.</span>
+    <span class="match-pick">1-0</span>
+    <span class="match-real">1-1</span>
+    <span class="pts pts-0">0 pts</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Estados Unidos vs Paraguay</span>
+    <span class="match-pick">2-0</span>
+    <span class="match-real">4-1</span>
+    <span class="pts pts-3">3 pts</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Qatar vs Suiza</span>
+    <span class="match-pick">0-1</span>
+    <span class="match-real">1-1</span>
+    <span class="pts pts-0">0 pts</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Brasil vs Marruecos</span>
+    <span class="match-pick">1-1</span>
+    <span class="match-real">1-1</span>
+    <span class="pts pts-6">6 pts ✓</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Haití vs Escocia</span>
+    <span class="match-pick">0-2</span>
+    <span class="match-real">0-1</span>
+    <span class="pts pts-3">3 pts</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Australia vs Turquía</span>
+    <span class="match-pick" style="color:#444">—</span>
+    <span class="match-real">2-0</span>
+    <span class="pts pts-skip">sin pron.</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Países Bajos vs Japón</span>
+    <span class="match-pick">2-2</span>
+    <span class="match-real">2-2</span>
+    <span class="pts pts-6">6 pts ✓</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🕐 Pronósticos abiertos (todavía no jugaron)</h2>
+  <div class="match-row">
+    <span class="match-name">Costa de Marfil vs Ecuador</span>
+    <span class="match-pick">0-1</span>
+    <span class="match-real" style="color:#444">—</span>
+    <span class="pts" style="color:#8892a4">pendiente</span>
+  </div>
+  <div class="match-row">
+    <span class="match-name">Suecia vs Túnez</span>
+    <span class="match-pick">2-0</span>
+    <span class="match-real" style="color:#444">—</span>
+    <span class="pts" style="color:#8892a4">pendiente</span>
+  </div>
+</div>
+
+<button class="btn btn-primary" id="loadBtn" onclick="cargarTodo()">Cargar todo en Firebase</button>
+<button class="btn btn-ghost" onclick="if(confirm('¿Borrar todos los pronósticos de Carloncho?')) borrarPronosticos()">🗑 Borrar pronósticos (si algo salió mal)</button>
+
+<div class="progress-bar" id="progress"><div class="progress-fill" id="fill"></div></div>
+<div id="log"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, set, remove, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ═══════════════════════════════════════════════
+  // 🔧 CONFIGURACIÓN FIREBASE — PEGÁ TUS DATOS ACÁ
+  // ═══════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey: "AIzaSyCDUgIkNNxKT0x5v_rFeePd3WrObSF3EgI",
+    authDomain: "prode-carloncho.firebaseapp.com",
+    databaseURL: "https://prode-carloncho-default-rtdb.firebaseio.com",
+    projectId: "prode-carloncho",
+    storageBucket: "prode-carloncho.firebasestorage.app",
+    messagingSenderId: "52661512564",
+    appId: "1:52661512564:web:2648be1662d20450a0a421"
+  };
+  // ═══════════════════════════════════════════════
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // ── Pronósticos históricos de Carloncho ─────────
+  // local y visitante = lo que pronosticó Carloncho
+  const PRONOSTICOS_HISTORICOS = [
+    { equipo_local: "México",         equipo_visitante: "Sudáfrica",    local: 3, visitante: 0 },
+    { equipo_local: "Corea del Sur",  equipo_visitante: "Rep. Checa",   local: 2, visitante: 0 },
+    { equipo_local: "Canadá",         equipo_visitante: "Bosnia-Herz.", local: 1, visitante: 0 },
+    { equipo_local: "Estados Unidos", equipo_visitante: "Paraguay",     local: 2, visitante: 0 },
+    { equipo_local: "Qatar",          equipo_visitante: "Suiza",        local: 0, visitante: 1 },
+    { equipo_local: "Brasil",         equipo_visitante: "Marruecos",    local: 1, visitante: 1 },
+    { equipo_local: "Haití",          equipo_visitante: "Escocia",      local: 0, visitante: 2 },
+    // Australia vs Turquía: sin pronóstico — no se carga
+    { equipo_local: "Países Bajos",   equipo_visitante: "Japón",        local: 2, visitante: 2 },
+    // Pendientes (todavía no jugaron)
+    { equipo_local: "Costa de Marfil",equipo_visitante: "Ecuador",      local: 0, visitante: 1 },
+    { equipo_local: "Suecia",         equipo_visitante: "Túnez",        local: 2, visitante: 0 },
+  ];
+
+  // ── Resultados reales de los partidos jugados ───
+  const RESULTADOS_REALES = [
+    { equipo_local: "México",         equipo_visitante: "Sudáfrica",    gl: 2, gv: 0 },
+    { equipo_local: "Corea del Sur",  equipo_visitante: "Rep. Checa",   gl: 2, gv: 1 },
+    { equipo_local: "Canadá",         equipo_visitante: "Bosnia-Herz.", gl: 1, gv: 1 },
+    { equipo_local: "Estados Unidos", equipo_visitante: "Paraguay",     gl: 4, gv: 1 },
+    { equipo_local: "Qatar",          equipo_visitante: "Suiza",        gl: 1, gv: 1 },
+    { equipo_local: "Brasil",         equipo_visitante: "Marruecos",    gl: 1, gv: 1 },
+    { equipo_local: "Haití",          equipo_visitante: "Escocia",      gl: 0, gv: 1 },
+    { equipo_local: "Australia",      equipo_visitante: "Turquía",      gl: 2, gv: 0 },
+    { equipo_local: "Países Bajos",   equipo_visitante: "Japón",        gl: 2, gv: 2 },
+  ];
+
+  function log(msg, cls = '') {
+    const el = document.getElementById('log');
+    el.style.display = 'block';
+    el.innerHTML += `<div class="${cls}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
+  function setProgress(pct) {
+    document.getElementById('progress').style.display = 'block';
+    document.getElementById('fill').style.width = pct + '%';
+  }
+
+  // Busca un partido por nombre de equipos
+  function findPartido(partidos, localBuscar, visitanteBuscar) {
+    return Object.entries(partidos).find(([id, m]) =>
+      m.equipo_local.toLowerCase().includes(localBuscar.toLowerCase().split(' ')[0]) &&
+      m.equipo_visitante.toLowerCase().includes(visitanteBuscar.toLowerCase().split(' ')[0])
+    );
+  }
+
+  window.cargarTodo = async function() {
+    const btn = document.getElementById('loadBtn');
+    btn.disabled = true;
+    btn.textContent = 'Cargando...';
+    document.getElementById('log').innerHTML = '';
+
+    log('📥 Leyendo partidos de Firebase...', 'log-info');
+
+    let partidos = {};
+    try {
+      const snap = await get(ref(db, 'partidos'));
+      partidos = snap.val() || {};
+    } catch(e) {
+      log('❌ No se pudo conectar con Firebase. Revisá las claves.', 'log-error');
+      btn.disabled = false; btn.textContent = 'Cargar todo en Firebase';
+      return;
+    }
+
+    const total = PRONOSTICOS_HISTORICOS.length + RESULTADOS_REALES.length;
+    let paso = 0;
+    let okPron = 0, okRes = 0, errores = 0;
+
+    // ── 1. Cargar pronósticos ──────────────────────
+    log('⚽ Cargando pronósticos de Carloncho...', 'log-info');
+    for (const p of PRONOSTICOS_HISTORICOS) {
+      const found = findPartido(partidos, p.equipo_local, p.equipo_visitante);
+      if (!found) {
+        log(`⚠️ No encontré: ${p.equipo_local} vs ${p.equipo_visitante}`, 'log-error');
+        errores++;
+      } else {
+        const [id] = found;
+        try {
+          await set(ref(db, `pronosticos/${id}`), {
+            local: p.local,
+            visitante: p.visitante,
+            timestamp: Date.now()
+          });
+          log(`✅ Pronóstico: ${p.equipo_local} ${p.local}-${p.visitante} ${p.equipo_visitante}`);
+          okPron++;
+        } catch(e) {
+          log(`❌ Error al guardar pronóstico: ${p.equipo_local}`, 'log-error');
+          errores++;
+        }
+      }
+      paso++;
+      setProgress(Math.round(paso/total*100));
+      await new Promise(r => setTimeout(r, 80));
+    }
+
+    // ── 2. Cargar resultados reales + marcar finalizado ──
+    log('', '');
+    log('📊 Cargando resultados reales...', 'log-info');
+    for (const r of RESULTADOS_REALES) {
+      const found = findPartido(partidos, r.equipo_local, r.equipo_visitante);
+      if (!found) {
+        log(`⚠️ No encontré: ${r.equipo_local} vs ${r.equipo_visitante}`, 'log-error');
+        errores++;
+      } else {
+        const [id, m] = found;
+        try {
+          await set(ref(db, `partidos/${id}`), {
+            ...m,
+            goles_local_reales: r.gl,
+            goles_visitante_reales: r.gv,
+            estado: 'finalizado'
+          });
+          log(`✅ Resultado: ${r.equipo_local} ${r.gl}-${r.gv} ${r.equipo_visitante}`);
+          okRes++;
+        } catch(e) {
+          log(`❌ Error al guardar resultado: ${r.equipo_local}`, 'log-error');
+          errores++;
+        }
+      }
+      paso++;
+      setProgress(Math.round(paso/total*100));
+      await new Promise(r => setTimeout(r, 80));
+    }
+
+    log('');
+    if (errores === 0) {
+      log(`🎉 ¡Todo listo! ${okPron} pronósticos y ${okRes} resultados cargados.`);
+      log(`📱 Carloncho ya tiene 24 puntos registrados en el sistema.`);
+    } else {
+      log(`⚠️ Terminó con ${errores} errores. Revisá el log arriba.`, 'log-error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Cargar todo en Firebase';
+  };
+
+  window.borrarPronosticos = async function() {
+    try {
+      await remove(ref(db, 'pronosticos'));
+      log('🗑 Pronósticos borrados. Podés volver a ejecutar la carga.', 'log-error');
+    } catch(e) {
+      log('❌ Error al borrar: ' + e.message, 'log-error');
+    }
+  };
+</script>
+</body>
+</html>
